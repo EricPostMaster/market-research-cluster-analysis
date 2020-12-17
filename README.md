@@ -7,7 +7,7 @@
 
 ## PART A
 ### Given approach
-- Factor analysis with a quartermax rotation
+- Factor analysis with a quartimax rotation
 - Metric of factors if eigenvalue is >1
 - k-means clustering on the factor scores
 - Clustering all 400 based on the four factors (not sure if it's actually 4) --> Number of factors based on eigenvalue greater than 1, not har coded as 4
