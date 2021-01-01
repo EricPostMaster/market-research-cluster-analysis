@@ -1,3 +1,7 @@
+# Specific files to ignore
+labeled_obs.csv
+config.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
