@@ -10,6 +10,11 @@ from sklearn.metrics import silhouette_samples, silhouette_score
 from operator import itemgetter
 import scipy.cluster.hierarchy as sch
 from sklearn.cluster import AgglomerativeClustering
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 
 
 class Analysis:
@@ -119,9 +124,19 @@ class Analysis:
 		# Add the labels to the training dataset (you can ignore the warning when the cell runs)
 		self.df_fct['cluster'] = sw[0][3]
 
+	def classification(self):
+		clf_scores = []
 
-def add_df_to_Analysis(df):
-	obj.create_df(df)
+		# These are the variable columns and the optimal cluster assignment
+		data_of_interest = df_fct.iloc[:,np.r_[:36,-1]]
+
+		# Split data into 80% training, 20% test
+		train, test = train_test_split(data_of_interest, test_size=0.2, random_state=123)
+
+		# X is unlabeled training data, y is true training labels 
+		X, y = train.loc[:, train.columns != 'cluster'], train['cluster']
+
+		X_test, y_test = test.loc[:, test.columns != 'cluster'], test['cluster']
 
 
 
