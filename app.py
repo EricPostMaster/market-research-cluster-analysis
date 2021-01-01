@@ -4,6 +4,12 @@ import streamlit.components.v1 as stc
 # File Processing Pkgs
 import pandas as pd
 from factor_analyzer import FactorAnalyzer
+from sklearn.cluster import KMeans
+from sklearn_extra.cluster import KMedoids
+from sklearn.metrics import silhouette_samples, silhouette_score
+from operator import itemgetter
+import scipy.cluster.hierarchy as sch
+from sklearn.cluster import AgglomerativeClustering
 
 
 class Analysis:
@@ -26,6 +32,7 @@ class Analysis:
 		self.cleaned = True
 	
 	def factor_analysis(self):
+
 		# Create factor analysis object and perform factor analysis
 		fa = FactorAnalyzer(n_factors=len(self.df_fct.columns), rotation=None)
 		fa.fit(self.df_fct)
@@ -57,6 +64,60 @@ class Analysis:
 		# Scores for the factor analysis, converted to dataframe
 		scores = pd.DataFrame(fa.transform(self.df_fct))
 		self.scores = scores
+
+	def clustering(self):
+		sw=[]
+
+		for i in range (2,7):
+			i_stats = []
+			algorithm = "kMedoids"
+			kMedoids = KMedoids(n_clusters=i, random_state=0)
+			kMedoids.fit(self.scores)
+			clusters=kMedoids.fit_predict(self.scores)
+			silhouette_avg = silhouette_score(self.scores,clusters)  # 1 is a perfect score, -1 is worst score
+			i_stats.append(algorithm)
+			i_stats.append(i)
+			i_stats.append(silhouette_avg)
+			i_stats.append(clusters)
+			sw.append(i_stats)
+			self.df_fct[algorithm+'_'+'cluster'+'_'+str(i)] = clusters
+			print(f"{i} k-medoid clusters: {round(silhouette_avg,3)}")
+
+		for i in range (2,7):
+			i_stats = []
+			algorithm = "kMeans"
+			kMeans = KMeans(n_clusters=i, random_state=0)
+			kMeans.fit(self.scores)
+			clusters=kMeans.labels_
+			silhouette_avg = silhouette_score(self.scores,clusters)  # 1 is a perfect score, -1 is worst score
+			i_stats.append(algorithm)
+			i_stats.append(i)
+			i_stats.append(silhouette_avg)
+			i_stats.append(clusters)
+			sw.append(i_stats)
+			self.df_fct[algorithm+'_'+'cluster'+'_'+str(i)] = clusters
+			print(f"{i} k-means clusters: {round(silhouette_avg,3)}")
+			
+		for i in range (2,7):
+			i_stats = []
+			algorithm = "hierarchical"
+			hc = AgglomerativeClustering(n_clusters = i, affinity = 'euclidean', linkage ='ward') #if linkage is ward, affinity must be Euclidean
+			hc.fit_predict(self.scores)
+			clusters=hc.labels_
+			silhouette_avg = silhouette_score(self.scores,clusters)  # 1 is a perfect score, -1 is worst score
+			i_stats.append(algorithm)
+			i_stats.append(i)
+			i_stats.append(silhouette_avg)
+			i_stats.append(clusters)
+			sw.append(i_stats)
+			self.df_fct[algorithm+'_'+'cluster'+'_'+str(i)] = clusters
+			print(f"{i} hierarchical clusters: {round(silhouette_avg,3)}")
+
+		# Reorder cluster lists by descending silhouette scores.  Clusters in first element should be assigned to training data.
+		sw = sorted(sw, key=itemgetter(2), reverse=True)
+
+		# Add the labels to the training dataset (you can ignore the warning when the cell runs)
+		self.df_fct['cluster'] = sw[0][3]
 
 
 def add_df_to_Analysis(df):
@@ -97,6 +158,10 @@ def main():
 			obj.factor_analysis()
 			st.write("These are the factor analysis scores")
 			st.dataframe(obj.scores)
+
+			obj.clustering()
+			st.write("Dataframe with cluster assignments added")
+			st.dataframe(obj.df_fct)
 
 		else:
 			st.write("Please upload a CSV file for processing")
