@@ -1,8 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as stc
-
-# File Processing Pkgs
 import pandas as pd
+import numpy as np
 from factor_analyzer import FactorAnalyzer
 from sklearn.cluster import KMeans
 from sklearn_extra.cluster import KMedoids
@@ -15,26 +14,12 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
-
-# def get_table_download_link(df):
-# 	"""Generates a link allowing the data in a given panda dataframe to be downloaded
-# 	in:  dataframe
-# 	out: href string
-# 	"""
-# 	csv = df.to_csv(index=False)
-# 	b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
-# 	href = f'<a href="data:file/csv;base64,{b64}">Download csv file</a>'
-# 	st.markdown(href)
-
 import base64
 import os
 import json
 import pickle
 import uuid
 import re
-
-import streamlit as st
-import pandas as pd
 
 def download_button(object_to_download, download_filename, button_text, pickle_it=False):
     """
@@ -134,6 +119,7 @@ class Analysis:
 		"""
 		df_fct = self.df.drop(['UID','Const'], axis=1)
 		self.df_fct = df_fct
+		self.variables_to_examine = len(df_fct.columns)
 		self.cleaned = True
 	
 	def factor_analysis(self):
@@ -171,52 +157,37 @@ class Analysis:
 		self.scores = scores
 
 	def clustering(self):
+
 		sw=[]
 
-		for i in range (2,7):
-			i_stats = []
-			algorithm = "kMedoids"
-			kMedoids = KMedoids(n_clusters=i, random_state=0)
-			kMedoids.fit(self.scores)
-			clusters=kMedoids.fit_predict(self.scores)
-			silhouette_avg = silhouette_score(self.scores,clusters)  # 1 is a perfect score, -1 is worst score
-			i_stats.append(algorithm)
-			i_stats.append(i)
-			i_stats.append(silhouette_avg)
-			i_stats.append(clusters)
-			sw.append(i_stats)
-			self.df_fct[algorithm+'_'+'cluster'+'_'+str(i)] = clusters
-			print(f"{i} k-medoid clusters: {round(silhouette_avg,3)}")
-
-		for i in range (2,7):
-			i_stats = []
-			algorithm = "kMeans"
-			kMeans = KMeans(n_clusters=i, random_state=0)
-			kMeans.fit(self.scores)
-			clusters=kMeans.labels_
-			silhouette_avg = silhouette_score(self.scores,clusters)  # 1 is a perfect score, -1 is worst score
-			i_stats.append(algorithm)
-			i_stats.append(i)
-			i_stats.append(silhouette_avg)
-			i_stats.append(clusters)
-			sw.append(i_stats)
-			self.df_fct[algorithm+'_'+'cluster'+'_'+str(i)] = clusters
-			print(f"{i} k-means clusters: {round(silhouette_avg,3)}")
+		for i in range(2,7):
 			
-		for i in range (2,7):
-			i_stats = []
-			algorithm = "hierarchical"
-			hc = AgglomerativeClustering(n_clusters = i, affinity = 'euclidean', linkage ='ward') #if linkage is ward, affinity must be Euclidean
-			hc.fit_predict(self.scores)
-			clusters=hc.labels_
-			silhouette_avg = silhouette_score(self.scores,clusters)  # 1 is a perfect score, -1 is worst score
-			i_stats.append(algorithm)
-			i_stats.append(i)
-			i_stats.append(silhouette_avg)
-			i_stats.append(clusters)
-			sw.append(i_stats)
-			self.df_fct[algorithm+'_'+'cluster'+'_'+str(i)] = clusters
-			print(f"{i} hierarchical clusters: {round(silhouette_avg,3)}")
+			# Create clustering objects
+			cls1 = KMeans(n_clusters=i, random_state=0)
+			cls2 = KMedoids(n_clusters=i, random_state=0)
+			cls3 = AgglomerativeClustering(n_clusters=i, affinity = 'euclidean', linkage ='ward') #if linkage is ward, affinity must be Euclidean
+			cls_algs = [['kMeans', cls1], ['kMedoids', cls2], ['Hierarchical', cls3]]
+			
+			# Fit and score clustering solutions for i clusters with each clustering algorithm
+			for cls in cls_algs:
+				
+				# Fit the model to the factor analysis scores
+				cls[1].fit(self.scores)
+				
+				# List of assigned clusters
+				clusters = cls[1].fit_predict(self.scores)
+				
+				# Silhouette scores for each solution
+				silhouette_avg = silhouette_score(self.scores,clusters)
+				
+				# Store solution info [algorithm, number of clusters, avg silhouette score, cluster predictions]
+				algorithm = cls[0]
+				i_stats = [algorithm, i, silhouette_avg, clusters]
+				sw.append(i_stats)
+				
+				# Add columns of cluster assignments to df_fct datafram
+				self.df_fct[algorithm+'_'+'cluster'+'_'+str(i)] = clusters
+
 
 		# Reorder cluster lists by descending silhouette scores.  Clusters in first element should be assigned to training data.
 		sw = sorted(sw, key=itemgetter(2), reverse=True)
@@ -224,21 +195,110 @@ class Analysis:
 		# Add the labels to the training dataset (you can ignore the warning when the cell runs)
 		self.df_fct['cluster'] = sw[0][3]
 
-	def classification(self):
-		clf_scores = []
+	#########################################################################################
+	# These functions are not being used right now because I'm trying to figure out scope
+	#########################################################################################
 
+	def split(self):
 		# These are the variable columns and the optimal cluster assignment
-		data_of_interest = df_fct.iloc[:,np.r_[:36,-1]]
+		data_of_interest = self.df_fct.iloc[:,np.r_[:self.variables_to_examine,-1]]
 
-		# Split data into 80% training, 20% test
-		train, test = train_test_split(data_of_interest, test_size=0.2, random_state=123)
+		# Split data into 75% training, 12.5% validation, 12.5% test
+		train, valid = train_test_split(data_of_interest, test_size=0.25, random_state=123)
+
+		valid, test = train_test_split(valid, test_size=0.5, random_state=123)
 
 		# X is unlabeled training data, y is true training labels 
 		X, y = train.loc[:, train.columns != 'cluster'], train['cluster']
 
+		X_valid, y_valid = valid.loc[:, train.columns != 'cluster'], valid['cluster']
+
 		X_test, y_test = test.loc[:, test.columns != 'cluster'], test['cluster']
 
 
+	def feature_importance(self):
+		importance = pd.DataFrame({'variable': list(range(1,37)),
+									'rf': clf1.feature_importances_,
+									'gbt': clf2.feature_importances_,
+									'avg': (importance['rf']+importance['gbt'])/2},
+								).set_index('variable')
+
+		# View top 10 variables when RF and GBT models are averaged
+		top_10_avg = importance.sort_values(by='avg', ascending=False)['avg'].head(10)
+
+		self.top_features = top_10_avg
+
+	#########################################################################################
+	#########################################################################################
+
+
+	def classification(self):
+
+		# These are the variable columns and the optimal cluster assignment
+		data_of_interest = self.df_fct.iloc[:,np.r_[:self.variables_to_examine,-1]]
+
+		# Split data into 75% training, 12.5% validation, 12.5% test
+		train, valid = train_test_split(data_of_interest, test_size=0.25, random_state=123)
+
+		valid, test = train_test_split(valid, test_size=0.5, random_state=123)
+
+		# X is unlabeled training data, y is true training labels 
+		X, y = train.loc[:, train.columns != 'cluster'], train['cluster']
+
+		X_valid, y_valid = valid.loc[:, train.columns != 'cluster'], valid['cluster']
+
+		X_test, y_test = test.loc[:, test.columns != 'cluster'], test['cluster']
+
+		# self.split()
+
+		clf_scores = []
+
+		clf1 = RandomForestClassifier(random_state=0)
+		clf2 = GradientBoostingClassifier(random_state=0)
+		clf3 = SVC(random_state=0)
+		clf4 = KNeighborsClassifier()
+
+		classifiers = [['rf', clf1], ['gbt', clf2], ['svc', clf3], ['knn', clf4]]
+
+		for classifier in classifiers:
+			
+			# Fit classifier to training data
+			classifier[1].fit(X,y)    
+			
+			# Store classifier-specific results [algorithm object, classifier name, scores]
+			results = [classifier[1], classifier[0], classifier[1].score(X_valid,y_valid)]
+
+			# Overall classifier results
+			clf_scores.append(results)
+
+		# Sort classifier accuracy in descending order
+		clf_scores = sorted(clf_scores, key=itemgetter(1), reverse=True) 
+
+		# Run the model on final test data
+		test_data_accuracy = round(clf_scores[0][0].score(X_test,y_test),5)*100
+
+		self.test_accuracy = test_data_accuracy
+
+		# self.feature_importance()
+		importance = pd.DataFrame({'variable': list(range(1,37)),
+							'rf': clf1.feature_importances_,
+							'gbt': clf2.feature_importances_,
+							# 'avg': (importance['rf']+importance['gbt'])/2
+							},
+						).set_index('variable')
+		
+		importance['avg'] = (importance['rf']+importance['gbt'])/2
+
+		# View top 10 variables when RF and GBT models are averaged
+		top_10_avg = importance.sort_values(by='avg', ascending=False)['avg'].head(10)
+
+		self.top_features = top_10_avg
+
+
+
+#########################################################################################
+# This is where the class ends and the Streamlit app front end begins
+#########################################################################################
 
 def main():
 
@@ -282,7 +342,11 @@ def main():
 	download_button_str = download_button(obj.df_fct, filename, 'Click here to download', pickle_it=False)
 	st.markdown(download_button_str, unsafe_allow_html=True)
 
+	obj.classification()
 
+	st.write(obj.__dict__)
+
+	st.write(obj.top_features)
 
 if __name__ == '__main__':
 	# Create an instance of the Analysis object
