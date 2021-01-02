@@ -36,7 +36,6 @@ import re
 import streamlit as st
 import pandas as pd
 
-
 def download_button(object_to_download, download_filename, button_text, pickle_it=False):
     """
     Generates a link to download the given object_to_download.
@@ -257,38 +256,30 @@ def main():
 			# Reassign value of obj.df attribute to the new dataframe df
 			obj.create_df(df)
 
+			# Display uploaded dataframe
+			st.write("This is the original dataframe")
+			st.dataframe(obj.df)
+
 		else:
 			st.write("Please upload a CSV file for processing")
 
-	
-	# Use the clean_data method on the Analysis object's original dataframe and print on screen
+	# Remove the first two columns to create .df_fct attribute
 	obj.clean_data()
-	st.write("This is the original dataframe")
-	st.dataframe(obj.df)
-
-	# Print the new dataframe
-	st.write("This is the dataframe with only the variables of interest")
-	st.dataframe(obj.df_fct)
 
 	# Factor Analysis
 	obj.factor_analysis()
-	st.write("These are the factor analysis scores")
-	st.dataframe(obj.scores)
 
 	# Clustering
 	obj.clustering()
 	st.write("Dataframe with cluster assignments added")
 	st.dataframe(obj.df_fct)
-
-
-	if obj.cleaned == True:
 		
-		# Input for user to choose the filename
-		filename = st.text_input('Enter output filename and ext (e.g. my-dataframe.csv)', 'new-file.csv')
-		
-		# Download button currently displays an error until the dataframe is processed
-		download_button_str = download_button(obj.df_fct, filename, 'Click here to download', pickle_it=False)
-		st.markdown(download_button_str, unsafe_allow_html=True)
+	# Input for user to choose the filename
+	filename = st.text_input('Enter output filename and ext (e.g. my-dataframe.csv)', 'test-file.csv')
+	
+	# Download button currently displays an error until the dataframe is processed
+	download_button_str = download_button(obj.df_fct, filename, 'Click here to download', pickle_it=False)
+	st.markdown(download_button_str, unsafe_allow_html=True)
 
 
 
