@@ -16,6 +16,107 @@ from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 
+# def get_table_download_link(df):
+# 	"""Generates a link allowing the data in a given panda dataframe to be downloaded
+# 	in:  dataframe
+# 	out: href string
+# 	"""
+# 	csv = df.to_csv(index=False)
+# 	b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
+# 	href = f'<a href="data:file/csv;base64,{b64}">Download csv file</a>'
+# 	st.markdown(href)
+
+import base64
+import os
+import json
+import pickle
+import uuid
+import re
+
+import streamlit as st
+import pandas as pd
+
+
+def download_button(object_to_download, download_filename, button_text, pickle_it=False):
+    """
+    Generates a link to download the given object_to_download.
+
+    Params:
+    ------
+    object_to_download:  The object to be downloaded.
+    download_filename (str): filename and extension of file. e.g. mydata.csv,
+    some_txt_output.txt download_link_text (str): Text to display for download
+    link.
+    button_text (str): Text to display on download button (e.g. 'click here to download file')
+    pickle_it (bool): If True, pickle file.
+
+    Returns:
+    -------
+    (str): the anchor tag to download object_to_download
+
+    Examples:
+    --------
+    download_link(your_df, 'YOUR_DF.csv', 'Click to download data!')
+    download_link(your_str, 'YOUR_STRING.txt', 'Click to download text!')
+
+    """
+    if pickle_it:
+        try:
+            object_to_download = pickle.dumps(object_to_download)
+        except pickle.PicklingError as e:
+            st.write(e)
+            return None
+
+    else:
+        if isinstance(object_to_download, bytes):
+            pass
+
+        elif isinstance(object_to_download, pd.DataFrame):
+            object_to_download = object_to_download.to_csv(index=False)
+
+        # Try JSON encode for everything else
+        else:
+            object_to_download = json.dumps(object_to_download)
+
+    try:
+        # some strings <-> bytes conversions necessary here
+        b64 = base64.b64encode(object_to_download.encode()).decode()
+
+    except AttributeError as e:
+        b64 = base64.b64encode(object_to_download).decode()
+
+    button_uuid = str(uuid.uuid4()).replace('-', '')
+    button_id = re.sub('\d+', '', button_uuid)
+
+    custom_css = f""" 
+        <style>
+            #{button_id} {{
+                background-color: rgb(204, 204, 204);
+                color: rgb(38, 39, 48);
+                padding: 0.35em 0.48em;
+                position: relative;
+                text-decoration: none;
+                border-radius: 4px;
+                border-width: 1px;
+                border-style: solid;
+                border-color: rgb(230, 234, 241);
+                border-image: initial;
+
+            }} 
+            #{button_id}:hover {{
+                border-color: rgb(246, 51, 102);
+                color: rgb(246, 51, 102);
+            }}
+            #{button_id}:active {{
+                box-shadow: none;
+                background-color: rgb(246, 51, 102);
+                color: white;
+                }}
+        </style> """
+
+    dl_link = custom_css + f'<a download="{download_filename}" id="{button_id}" href="data:file/txt;base64,{b64}">{button_text}</a><br></br>'
+
+    return dl_link
 
 class Analysis:
 	def __init__(self):
@@ -150,43 +251,48 @@ def main():
 	if st.button("Process"):
 		if data_file is not None:
 
-			# This was from the boilerplate code.  Don't need it.
-			# file_details = {"Filename":data_file.name,"FileType":data_file.type,"FileSize":data_file.size}
-			# st.write(file_details)
-
 			# Save uploaded CSV to dataframe
 			df = pd.read_csv(data_file)
 
 			# Reassign value of obj.df attribute to the new dataframe df
 			obj.create_df(df)
 
-			# Use the clean_data method on the Analysis object's original dataframe and print on screen
-			obj.clean_data()
-			st.write("This is the original dataframe")
-			st.dataframe(obj.df)
-			
-			# Print the new dataframe
-			st.write("This is the dataframe with only the variables of interest")
-			st.dataframe(obj.df_fct)
-			# st.write(obj.__dict__)  # Won't need this when we're done
-
-			obj.factor_analysis()
-			st.write("These are the factor analysis scores")
-			st.dataframe(obj.scores)
-
-			obj.clustering()
-			st.write("Dataframe with cluster assignments added")
-			st.dataframe(obj.df_fct)
-
 		else:
 			st.write("Please upload a CSV file for processing")
+
 	
-	# if st.button("Show scores"):
-	# 	st.write(obj.__dict__)
-	# 	obj.factor_analysis()
-	# 	st.dataframe(obj.scores)
+	# Use the clean_data method on the Analysis object's original dataframe and print on screen
+	obj.clean_data()
+	st.write("This is the original dataframe")
+	st.dataframe(obj.df)
+
+	# Print the new dataframe
+	st.write("This is the dataframe with only the variables of interest")
+	st.dataframe(obj.df_fct)
+
+	# Factor Analysis
+	obj.factor_analysis()
+	st.write("These are the factor analysis scores")
+	st.dataframe(obj.scores)
+
+	# Clustering
+	obj.clustering()
+	st.write("Dataframe with cluster assignments added")
+	st.dataframe(obj.df_fct)
+
+
+	if obj.cleaned == True:
+		
+		# Input for user to choose the filename
+		filename = st.text_input('Enter output filename and ext (e.g. my-dataframe.csv)', 'new-file.csv')
+		
+		# Download button currently displays an error until the dataframe is processed
+		download_button_str = download_button(obj.df_fct, filename, 'Click here to download', pickle_it=False)
+		st.markdown(download_button_str, unsafe_allow_html=True)
+
+
 
 if __name__ == '__main__':
-	# Create an instance of the Analysis object and call it obj (this is confusing and should be changed)
+	# Create an instance of the Analysis object
 	obj = Analysis()
 	main()
