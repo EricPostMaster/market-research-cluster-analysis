@@ -278,6 +278,7 @@ def main():
 	filename = st.text_input('Enter output filename and ext (e.g. my-dataframe.csv)', 'test-file.csv')
 	
 	# Download button currently displays an error until the dataframe is processed
+	# Make sure to add the UID and Const columns back onto the dataframe before downloading it
 	download_button_str = download_button(obj.df_fct, filename, 'Click here to download', pickle_it=False)
 	st.markdown(download_button_str, unsafe_allow_html=True)
 
