@@ -20,6 +20,9 @@ import json
 import pickle
 import uuid
 import re
+import plotly.express as px
+import time
+
 
 def download_button(object_to_download, download_filename, button_text, pickle_it=False):
     """
@@ -101,6 +104,9 @@ def download_button(object_to_download, download_filename, button_text, pickle_i
     dl_link = custom_css + f'<a download="{download_filename}" id="{button_id}" href="data:file/txt;base64,{b64}">{button_text}</a><br></br>'
 
     return dl_link
+
+def get_display_vars(display_vars):
+	return display_vars
 
 class Analysis:
 	def __init__(self):
@@ -283,16 +289,21 @@ class Analysis:
 		importance = pd.DataFrame({'variable': list(range(1,37)),
 							'rf': clf1.feature_importances_,
 							'gbt': clf2.feature_importances_,
-							# 'avg': (importance['rf']+importance['gbt'])/2
 							},
 						).set_index('variable')
+
+		self.importance = importance
 		
+		# Average variable importance of rf and gbt models
 		importance['avg'] = (importance['rf']+importance['gbt'])/2
 
-		# View top 10 variables when RF and GBT models are averaged
-		top_10_avg = importance.sort_values(by='avg', ascending=False)['avg'].head(10)
+		# Average importance of all variables scaled from 0 to 1 (better interpretability)
+		importance['Relative Importance'] = np.interp(importance['avg'], (importance['avg'].min(), importance['avg'].max()), (0, 1))
 
-		self.top_features = top_10_avg
+		# View top 10 variables when RF and GBT models are averaged
+		top_10_vars = importance.sort_values(by='Relative Importance', ascending=False)['Relative Importance'].head(10)
+
+		self.top_features = top_10_vars
 
 
 
@@ -301,10 +312,19 @@ class Analysis:
 #########################################################################################
 
 def main():
+	file_uploaded = False
 
-	st.title("File Uploader")
+	st.set_page_config(
+		page_title="Market Research Cluster Creation Tool",
+		page_icon=":bulb:",
+		layout="centered"
+	)
 
-	st.subheader("Upload Your Dataset")
+	st.title("Market Research Cluster Creation Tool")
+
+	st.subheader("How it works:")
+	st.write("""Upload your research participant dataset, and this tool will compute
+	an optimal clustering solution and identify the top 10 most important variables.""")
 	data_file = st.file_uploader("Upload CSV",type=['csv'])
 
 	if st.button("Process"):
@@ -316,37 +336,97 @@ def main():
 			# Reassign value of obj.df attribute to the new dataframe df
 			obj.create_df(df)
 
-			# Display uploaded dataframe
-			st.write("This is the original dataframe")
-			st.dataframe(obj.df)
+			
+			my_bar = st.progress(0)
+			progress_message = st.empty()
+
+			for percent_complete in range(100):
+				time.sleep(0.015)
+
+				# Trying, unsuccessfully, to display a progress message...
+				# if percent_complete == 30:
+				# 	progress_message = st.write("Analyzing cluster solutions...")
+				# if percent_complete == 35:
+				# 	progress_message = st.empty()
+				
+				my_bar.progress(percent_complete + 1)
+			
+			file_uploaded = True
 
 		else:
 			st.write("Please upload a CSV file for processing")
-
-	# Remove the first two columns to create .df_fct attribute
-	obj.clean_data()
-
-	# Factor Analysis
-	obj.factor_analysis()
-
-	# Clustering
-	obj.clustering()
-	st.write("Dataframe with cluster assignments added")
-	st.dataframe(obj.df_fct)
-		
-	# Input for user to choose the filename
-	filename = st.text_input('Enter output filename and ext (e.g. my-dataframe.csv)', 'test-file.csv')
 	
-	# Download button currently displays an error until the dataframe is processed
-	# Make sure to add the UID and Const columns back onto the dataframe before downloading it
-	download_button_str = download_button(obj.df_fct, filename, 'Click here to download', pickle_it=False)
-	st.markdown(download_button_str, unsafe_allow_html=True)
+	if file_uploaded == True:
+		
+		# Remove the first two columns to create .df_fct attribute
+		obj.clean_data()
 
-	obj.classification()
+		display_vars = st.sidebar.slider("How many variables would you like to see?", min_value=3, max_value=obj.variables_to_examine, value=3)
 
-	st.write(obj.__dict__)
+		num_vars_to_display = get_display_vars(display_vars)
 
-	st.write(obj.top_features)
+		# Factor Analysis
+		obj.factor_analysis()
+
+		# Clustering
+		obj.clustering()
+		
+		# Display and download clustered data 
+		st.header("Clustered Data")
+		st.write("""Cluster assignments have been added to the original data.
+		Click the button below to download.""")
+		obj.df_all_clusters = pd.concat([obj.df, obj.df_fct.iloc[:,obj.variables_to_examine:]], axis=1)
+		st.dataframe(obj.df_all_clusters) 
+			
+		# Input for user to choose the filename
+		# filename = st.text_input('Enter output filename and ext (e.g. my-dataframe.csv)', 'test-file.csv')
+
+		# Download button currently displays an error until the dataframe is processed
+		# Make sure to add the UID and Const columns back onto the dataframe before downloading it
+		download_button_str = download_button(obj.df_all_clusters, 'clustered-data.csv', 'Click here to download the clustered data', pickle_it=False)
+		st.markdown(download_button_str, unsafe_allow_html=True)
+
+		obj.classification()
+
+		# st.write(obj.__dict__)
+
+		st.header("Most Impactful Stimuli")
+		st.write("These features are the most important in identifying the clusters:")
+
+		
+
+		importance_rank = list(range(1,obj.variables_to_examine+1))
+		obj.importance.sort_values(by='Relative Importance', ascending=False, inplace=True)
+		obj.importance['rank'] = importance_rank
+
+		graph_data = obj.importance[0:num_vars_to_display]
+
+		fig = px.bar(graph_data, x=graph_data.index, y=graph_data['Relative Importance'], hover_data=[graph_data.index], color='rank')
+
+		# fig = px.bar(obj.importance, x=obj.importance.index, y='Relative Importance', hover_data=[obj.importance.index], color='rank')
+		st.plotly_chart(fig, use_container_width=False)
+
+		st.subheader("Top 10 Stimuli")
+		st.write(obj.importance.sort_values(by='Relative Importance', ascending=False)['Relative Importance'].head(10))
+
+		# col1, col2 = st.beta_columns(2)
+		
+		# with col2:
+		# 	st.subheader("Top 10 Stimuli")
+		# 	st.write(obj.importance.sort_values(by='Relative Importance', ascending=False)['Relative Importance'].head(10))
+		
+		# with col1:
+
+		# 	fig = px.bar(obj.importance, x=obj.importance.index, y=obj.importance['Relative Importance'])
+		# 	st.plotly_chart(fig, use_container_width=False)
+
+			# fig, ax = plt.subplots()
+			# ax.bar( x=range(len(obj.importance.index)),
+			# 		height=obj.importance['Relative Importance'],
+			# 		data=obj.importance.sort_values(by='Relative Importance', ascending=False, inplace=True))
+			# st.pyplot(fig)
+
+			# importance.sort_values(by='Relative Importance', ascending=False)['Relative Importance'].head(10)
 
 if __name__ == '__main__':
 	# Create an instance of the Analysis object
