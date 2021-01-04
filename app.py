@@ -20,7 +20,7 @@ import json
 import pickle
 import uuid
 import re
-import plotly.express as px
+from matplotlib import pyplot as plt
 import time
 
 st.set_page_config(
@@ -86,10 +86,10 @@ def download_button(object_to_download, download_filename, button_text, pickle_i
             #{button_id} {{
                 background-color: rgb(204, 204, 204);
                 color: rgb(38, 39, 48);
-                padding: 0.35em 0.48em;
+                padding: 0.55em 0.68em;
                 position: relative;
                 text-decoration: none;
-                border-radius: 4px;
+                border-radius: 8px;
                 border-width: 1px;
                 border-style: solid;
                 border-color: rgb(230, 234, 241);
@@ -97,13 +97,13 @@ def download_button(object_to_download, download_filename, button_text, pickle_i
 
             }} 
             #{button_id}:hover {{
-                border-color: rgb(246, 51, 102);
-                color: rgb(246, 51, 102);
+                background-color: rgb(184, 184, 184);
+                color: rgb(20, 21, 25);
             }}
             #{button_id}:active {{
                 box-shadow: none;
-                background-color: rgb(246, 51, 102);
-                color: white;
+                background-color: rgb(154, 154, 154);
+                color: rgb(20, 21, 25);
                 }}
         </style> """
 
@@ -113,35 +113,54 @@ def download_button(object_to_download, download_filename, button_text, pickle_i
 
 
 @st.cache
-def expensive_function(df):
+def cluster_solver(df):
+
+	"""
+	Cleans, analyzes, clusters, and classifies.
+
+	This function has four primary components:
+		1. Clean the uploaded data by removing the first two columns that are not needed for analysis.
+		2. Factor analysis to remove noise from uploaded data
+		3. Clustering on the scores of the factor analysis. Silhouette scores are used to evaluate cluster solutions.
+		4. Classification models for training, validation, and test data.
+
+	Generates a dataframe with all clustering solutions added and optimal solution in final column.
+
+	Params:
+	------
+	df: The uploaded CSV file. Must begin with two columns (UID and Const) and have the rest consist of only variables for modeling.
+
+	Returns:
+	-------
+    df_fct: The modified dataframe consisting of only variables for factor analysis
+	variables_to_examine: The number of variables used in factor analysis
+	importance: Dataframe of relative importance of variables according to classification models
+	file_uploaded: Boolean flag variable indicating that a file has been uploaded
+	df_all_clusters: Final dataframe including all original columns as well as all clustering solutions
+
+	Example:
+	--------
+	cluster_solver(df)
+
+	"""
 
 	#########################################################################################
 	# Clean Data
 	#########################################################################################
 
-	"""
-	Input: Original uploaded CSV file converted to dataframe
-	
-	Output: New dataframe without UID and Constant columns, saved as attribute df_fct
-			Also creates cleaned attribute and sets to True so I can prevent other actions
-			from being taken before the data is cleaned.
-	"""
-	# global df_fct
-	# global variables_to_examine
-	# global importance
-	# global file_uploaded
-
+	# Uploaded CSV file
 	df = df
 
+	# Dataframe consisting only of the factors needed for analysis
 	df_fct = df.drop(['UID','Const'], axis=1)
-	variables_to_examine = len(df_fct.columns)
-	cleaned = True
 	
+	# Number of factors needed in factor analysis
+	variables_to_examine = len(df_fct.columns)
+	
+
 	#########################################################################################
 	# Factor Analysis
 	#########################################################################################
-
-	# """Need to add a docstring here"""
 
 	# Create factor analysis object and perform factor analysis
 	fa = FactorAnalyzer(n_factors=len(df_fct.columns), rotation=None)
@@ -150,7 +169,7 @@ def expensive_function(df):
 	# Check Eigenvalues
 	ev, v = fa.get_eigenvalues()
 
-	# Create FactorAnalyzer object
+	# Create FactorAnalyzer object with optimal number of factors
 	rotation = 'varimax'
 	n_factors = sum(i >= 1 for i in ev)
 	fa = FactorAnalyzer(n_factors=n_factors, rotation=rotation)
@@ -164,25 +183,6 @@ def expensive_function(df):
 
 
 	#########################################################################################
-	# Pretty sure this chunk of code is from the analysis and isn't used in the app
-	
-	# The loadings are the coefficients that make up the linear combination of original variables to get the factors (v1 = l1x1 + l2X2)
-	loadings = fa.loadings_
-	# Create dataframe of eigenvalues of the covariance matrix
-	data = {'factor'                    : range(1,n_factors+1),
-			'eigenvalues'               : fa.get_eigenvalues()[0][0:n_factors],
-			'common_factor_eigenvalues' : fa.get_eigenvalues()[1][0:n_factors],
-			'variance'                  : fa.get_factor_variance()[0],
-			'proportional_variance'     : fa.get_factor_variance()[1],
-			'cumulative_variance'       : fa.get_factor_variance()[2]
-		}
-
-	cov_matrix_eigenvals = pd.DataFrame(data=data).set_index('factor')
-	#########################################################################################
-
-
-
-	#########################################################################################
 	# Clustering
 	#########################################################################################
 
@@ -193,7 +193,7 @@ def expensive_function(df):
 		# Create clustering objects
 		cls1 = KMeans(n_clusters=i, random_state=0)
 		cls2 = KMedoids(n_clusters=i, random_state=0)
-		cls3 = AgglomerativeClustering(n_clusters=i, affinity = 'euclidean', linkage ='ward') #if linkage is ward, affinity must be Euclidean
+		cls3 = AgglomerativeClustering(n_clusters=i, affinity = 'euclidean', linkage ='ward')
 		cls_algs = [['kMeans', cls1], ['kMedoids', cls2], ['Hierarchical', cls3]]
 		
 		# Fit and score clustering solutions for i clusters with each clustering algorithm
@@ -220,9 +220,10 @@ def expensive_function(df):
 	# Reorder cluster lists by descending silhouette scores.  Clusters in first element should be assigned to training data.
 	sw = sorted(sw, key=itemgetter(2), reverse=True)
 
-	# Add the labels to the training dataset (you can ignore the warning when the cell runs)
+	# Add the labels to the training dataset
 	df_fct['cluster'] = sw[0][3]
 
+	# Complete dataframe with all originally uploaded columns and all clustering solutions
 	df_all_clusters = pd.concat([df, df_fct.iloc[:,variables_to_examine:]], axis=1)
 
 
@@ -245,8 +246,10 @@ def expensive_function(df):
 
 	X_test, y_test = test.loc[:, test.columns != 'cluster'], test['cluster']
 
+	# Somewhere to store classification solutions
 	clf_scores = []
 
+	# Create classifier objects
 	clf1 = RandomForestClassifier(random_state=0)
 	clf2 = GradientBoostingClassifier(random_state=0)
 	clf3 = SVC(random_state=0)
@@ -275,8 +278,8 @@ def expensive_function(df):
 	importance = pd.DataFrame({'variable': list(range(1,37)),
 						'rf': clf1.feature_importances_,
 						'gbt': clf2.feature_importances_,
-						},
-					).set_index('variable')
+						},)
+					# ).set_index('variable')
 	
 	# Average variable importance of rf and gbt models
 	importance['avg'] = (importance['rf']+importance['gbt'])/2
@@ -287,21 +290,18 @@ def expensive_function(df):
 	# View top 10 variables when RF and GBT models are averaged
 	top_10_vars = importance.sort_values(by='Relative Importance', ascending=False)['Relative Importance'].head(10)
 
-	importance_rank = list(range(1,variables_to_examine+1))
+	# Sort importance dataframe in descending order by Relative Importance
 	importance.sort_values(by='Relative Importance', ascending=False, inplace=True)
-	importance['rank'] = importance_rank
 
+	# File upload state (not needed in current version, maybe in future)
 	file_uploaded = True
 
-	return [df_fct, variables_to_examine, importance, file_uploaded, df_all_clusters, df]
+	return [df_fct, variables_to_examine, importance, file_uploaded, df_all_clusters]
 
 
 #########################################################################################
-# This is where the class ends and the Streamlit app front end begins
+# Streamlit app begins
 #########################################################################################
-
-
-file_uploaded = False
 
 st.title("Market Research Cluster Creation Tool")
 
@@ -310,72 +310,66 @@ st.write("""Upload your research participant dataset, and this tool will compute
 an optimal clustering solution and identify the top 10 most important variables.""")
 data_file = st.file_uploader("Upload CSV",type=['csv'])
 
-# if st.button("Process"):
+# Once a file is uploaded, everything starts
 if data_file is not None:
 
 	# Save uploaded CSV to dataframe
-	global df
 	df = pd.read_csv(data_file)
 
 	# Reassign value of df attribute to the new dataframe df
-	r = expensive_function(df)
+	r = cluster_solver(df)
 	
+	# Progress bar animation
 	my_bar = st.progress(0)
-	progress_message = st.empty()
 
 	for percent_complete in range(100):
-		time.sleep(0.015)
-		
+		time.sleep(0.01)
 		my_bar.progress(percent_complete + 1)
-
-	# else:
-	# 	st.write("Please upload a CSV file for processing")
-
-# if file_uploaded == r[3]:
 	
 	# Display and download clustered data 
 	st.header("Clustered Data")
 	st.write("""Cluster assignments have been added to the original data.
 	Click the button below to download.""")
 	st.dataframe(r[4]) 
-		
-	# Input for user to choose the filename
-	# filename = st.text_input('Enter output filename and ext (e.g. my-dataframe.csv)', 'test-file.csv')
 
-	# Download button currently displays an error until the dataframe is processed
-	# Make sure to add the UID and Const columns back onto the dataframe before downloading it
-	download_button_str = download_button(r[4], 'clustered-data.csv', 'Click here to download the clustered data', pickle_it=False)
-	st.markdown(download_button_str, unsafe_allow_html=True)
+	st.write("To download the dataset, enter the desired filename and click below.")
 
+	# The download filename and button are in these two columns
+	col1, col2 = st.beta_columns([2,1])
+
+	with col1:
+		filename = st.text_input('Enter output filename and ext (e.g. my-dataframe.csv)', 'clustered-data.csv')
+
+	with col2:
+		st.write(" ")
+		st.write(" ")
+		st.write(" ")
+		download_button_str = download_button(r[4], filename, 'Download Data', pickle_it=False)
+		st.markdown(download_button_str, unsafe_allow_html=True)
+
+	# Informational section at the bottom of the page
 	st.header("Most Impactful Stimuli")
 	st.write("These features are the most important in identifying the clusters:")
 
+	# Slider determines number of variables shown in plot and dataframe
 	display_vars = st.slider("How many variables would you like to see?", min_value=3, max_value=r[1], value=10)
-	graph_data = r[2][0:display_vars]
 
-	fig = px.bar(graph_data, x=graph_data.index, y=graph_data['Relative Importance'], hover_data=[graph_data.index], color='rank')
+	# This is the subsetted data from the slider that is used in the plots
+	graph_data = r[2].sort_values(by='Relative Importance', ascending=False).head(display_vars)
 
-	# fig = px.bar(importance, x=importance.index, y='Relative Importance', hover_data=[importance.index], color='rank')
-	st.plotly_chart(fig, use_container_width=False)
+	# The variable column has to be turned into a string list for a categorical bar plot to render correctly
+	names = graph_data['variable'].astype(str).tolist()
+	values = graph_data['Relative Importance'].tolist()
 
-	st.subheader("Top 10 Stimuli")
-	st.write(r[2].sort_values(by='Relative Importance', ascending=False)['Relative Importance'].head(10))
+	# Categorical bar plot
+	fig, ax = plt.subplots(figsize=(8,4))
+	ax.bar(names, values)
+	plt.xlabel("Variable")
+	plt.ylabel("Relative Importance")
+	plt.title(f'Top {display_vars} Stimuli')
+	plt.tight_layout()
+	st.pyplot(fig)
 
-	# col1, col2 = st.beta_columns(2)
-
-	# with col2:
-	# 	st.subheader("Top 10 Stimuli")
-	# 	st.write(importance.sort_values(by='Relative Importance', ascending=False)['Relative Importance'].head(10))
-
-	# with col1:
-
-	# 	fig = px.bar(importance, x=importance.index, y=importance['Relative Importance'])
-	# 	st.plotly_chart(fig, use_container_width=False)
-
-		# fig, ax = plt.subplots()
-		# ax.bar( x=range(len(importance.index)),
-		# 		height=importance['Relative Importance'],
-		# 		data=importance.sort_values(by='Relative Importance', ascending=False, inplace=True))
-		# st.pyplot(fig)
-
-		# importance.sort_values(by='Relative Importance', ascending=False)['Relative Importance'].head(10)
+	# Dataframe that shows the same thing as the plot but in tabular form
+	st.subheader(f'Top {display_vars} Stimuli Dataframe')
+	st.write(r[2].sort_values(by='Relative Importance', ascending=False)[['variable','Relative Importance']].head(display_vars))
