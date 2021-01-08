@@ -23,7 +23,7 @@ Do we want to include an example here?
 ## Data
 The data collected in these experiments is formatted in a specific and consistent way, which includes an anonymized participant ID, a baseline constant, and columns for each of the tested variables (aka stimuli).
 
-![Data Snippet](images/data_snippet.png)
+<center><img src="Images/data_snippet.png" width="600"></center>
 
 ## Analysis
 The analysis for this tool is comprised of three major components: Factor Analysis, Clustering, and Classification.
