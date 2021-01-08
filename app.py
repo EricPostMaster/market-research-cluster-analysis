@@ -1,26 +1,36 @@
 import streamlit as st
 import streamlit.components.v1 as stc
+
+# Data Manipulation and Visualization
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sn
 import numpy as np
+
+# Factor Analysis
 from factor_analyzer import FactorAnalyzer
+
+# Clustering
 from sklearn.cluster import KMeans
 from sklearn_extra.cluster import KMedoids
+from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import silhouette_samples, silhouette_score
 from operator import itemgetter
-import scipy.cluster.hierarchy as sch
-from sklearn.cluster import AgglomerativeClustering
+
+# Classification
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
+
+# Other
 import base64
 import os
 import json
 import pickle
 import uuid
 import re
-from matplotlib import pyplot as plt
 import time
 
 st.set_page_config(
