@@ -1,38 +1,5 @@
 # Market Research Cluster Analysis
 
-**Data Summary**
-- Column A is the ID
-- Column B is a constant, and we ignore that
-- Read in columns that start with an E_ for clustering
-
-## PART A
-### Given approach
-- Factor analysis with a quartimax rotation
-- Metric of factors if eigenvalue is >1
-- k-means clustering on the factor scores
-- Clustering all 400 based on the four factors (not sure if it's actually 4) --> Number of factors based on eigenvalue greater than 1, not har coded as 4
-- k is 2-6 clusters
-
-### Open-ended approach
-- Interested in using a Pearson distance measure.  Has to be coded in
-- <a href="https://scikit-learn-extra.readthedocs.io/en/latest/user_guide.html#k-medoids">k-medoids</a> could be good because it works for any distance measure
-- cosine distance measure
-- Auto-SKLearn - iterates through multiple methods
-
-### Two methods to identify optimal clusters
-- Mean square distance
-- Screeplot/elbow plot
-
-
-## PART B
-Now that everyone is clustered, what best predicts the clusters?
-
-Classification with decision tree or random forest
-
-Another thought is to use strategic binning to "re-scale" the data and use it to classify the clusters
-
-
-
 ## Report Outline
 
 Business Case: Looking for an efficient, statistically sound approach to uncovering latent market segments.
@@ -43,6 +10,32 @@ We use that data to identify groups in the marketplace.
 
 Ultimate final final goal: We were able to use two major variables to understand people, and now we can use the other 34 variables that describe the cluster.
 
+
+
+## Introduction
+Interpreting consumer product market research data can be a daunting task.  Researchers may collect user input on dozens of variables, and then it is up to analysts to interpret and generalize those results into meaningful market segments and actionable insights.  The goal of this project has been to create a repeatable, efficient, and technically sound approach to uncovering latent market segments from market research data and to identify variables that are most influential in defining those market segments so marketing and product development teams can more efficiently reach their target audiences.
+
+The final deliverable of this project is a [web application](http://example.com) where end-users can upload their datasets for analysis and receive clustered results as well as a ranked list of the most influential variables.  The latest classification model has achieved a 90.57% accuracy, compared to just 61.94% accuracy through random classification.
+
+## An Example
+Do we want to include an example here?
+
+## Data
+The data collected in these experiments is formatted in a specific and consistent way, which includes an anonymized participant ID, a baseline constant, and columns for each of the tested variables (aka stimuli).
+
+## Analysis
+The analysis for this tool is comprised of three major components: Factor Analysis, Clustering, and Classification.
+
+### Factor Analysis
+
+
+### Clustering
+
+
+### Classification
+
+
+## Application 
 
 
 
