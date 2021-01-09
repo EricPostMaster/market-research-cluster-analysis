@@ -1,21 +1,11 @@
 # Market Research Cluster Analysis
 
-## Report Outline
-
-Business Case: Looking for an efficient, statistically sound approach to uncovering latent market segments.
-
-Ultimate goal is to find an easy way to classify someone with as few variables as possible (minimizing the number of variables required to classify them)
-The data could be obtained through surveys, focus groups, web sources, etc.  The point is, it's data showing how people react to certain stimuli.
-We use that data to identify groups in the marketplace.
-
-Ultimate final final goal: We were able to use two major variables to understand people, and now we can use the other 34 variables that describe the cluster.
-
-
-
 ## Introduction
 Interpreting consumer product market research data can be a daunting task.  Researchers may collect user input on dozens of variables, and then it is up to analysts to interpret and generalize those results into meaningful market segments and actionable insights.  The goal of this project has been to create a repeatable, efficient, and technically sound approach to uncovering latent market segments from market research data and to identify variables that are most influential in defining those market segments so marketing and product development teams can more efficiently reach their target audiences.
 
-The final deliverable of this project is a [web application](http://example.com) where end-users can upload their datasets for analysis and receive clustered results as well as a ranked list of the most influential variables.  The latest classification model has achieved a 90.57% accuracy, compared to just 61.94% accuracy through random classification.
+The final deliverable of this project is a [web application](http://example.com) where end-users can upload their datasets for analysis and receive clustered results as well as a ranked list of the most influential variables.  The immediate business impact of the influential variable list is the ability to use relatively few variables to identify clusters and then use the other associated variables to create messaging or other content that will resonate with the target audience.
+
+The latest classification model has achieved a 90.57% accuracy, compared to just 61.94% accuracy through random classification.
 
 ## App In Action
 <img src="Images/app_demo.gif" width="600" alt="App demo">
@@ -41,7 +31,6 @@ The optimal clustering solution is selected based on the highest silhouette scor
 #### Business Note:
 In a business setting, the optimal clustering solution would need to be validated as useful before being used to classify new customer data.  For the sake of expediency, this project assumes that the clusters are representative of customer groups.
 
-
 ### Classification
 After splitting the clustered data into training, validation, and test sets, classifiers are trained using Random Forest, gradient boosted trees, support vector classification, and k-Nearest Neighbors.  Accuracy is used to select the optimal classification model.  We selected accuracy as our primary metric instead of precision and recall because there are no "false positive" or "false negative" outcomes, and misclassification of any one cluster does not cost any more or less than any other cluster.  Another benefit of using accuracy is that it is easily understood by end-users.
 
@@ -53,12 +42,4 @@ We used target shuffling to assess the quality of the classification model becau
 <img src="Images/target_shuffling_accuracy.png" width="400" alt="Histogram of target shuffling accuracy">
 
 ## Web Application
-The web application was built using [Streamlit](https://www.streamlit.io/) and deployed on Heroku.  Click here to view the app.  Test data can be downloaded [here](customer_data.csv).
-
-
-
-
-
-
-
-
+The web application was built using Streamlit and deployed on Heroku.  Click <a href="http://www.example.com" target="_blank">here</a> to view the app.  Test data can be downloaded <a href="customer_data.csv" download="sample_data.csv" target="_blank">here</a>.
