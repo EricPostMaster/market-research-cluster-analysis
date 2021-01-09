@@ -17,8 +17,8 @@ Interpreting consumer product market research data can be a daunting task.  Rese
 
 The final deliverable of this project is a [web application](http://example.com) where end-users can upload their datasets for analysis and receive clustered results as well as a ranked list of the most influential variables.  The latest classification model has achieved a 90.57% accuracy, compared to just 61.94% accuracy through random classification.
 
-## An Example
-Do we want to include an example here?
+## App In Action
+<img src="Images/app_demo.gif" width="600" alt="App demo">
 
 ## Data
 The data collected in these experiments is formatted in a specific and consistent way, which includes an anonymized participant ID, a baseline constant, and columns for each of the tested variables (aka stimuli).
