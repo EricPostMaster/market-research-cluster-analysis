@@ -47,14 +47,13 @@ After splitting the clustered data into training, validation, and test sets, cla
 
 Individual variable importance is obtained by averaging the feature importance outputs of the Random Forest and gradient boosted trees algorithms.  In the initial analysis, 7 out of the top 10 variables appeared in both lists.
 
-#### Model Quality
+#### Assessing Model Quality
+We used target shuffling to assess the quality of the classification model because it is suitable for data with multiple unordered levels (e.g. cluster 1, 2, or 3). The final model results are compared to scores for 10,000 random shuffles of the target variable, with the resulting difference charted in the histogram below.
 
+<img src="Images/target_shuffling_accuracy.png" width="400" alt="Histogram of target shuffling accuracy">
 
-
-
-## Application 
-
-
+## Web Application
+The web application was built using [Streamlit](https://www.streamlit.io/) and deployed on Heroku.  Click here to view the app.  Test data can be downloaded [here](customer_data.csv).
 
 
 
