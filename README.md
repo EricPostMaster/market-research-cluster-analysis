@@ -53,12 +53,4 @@ We used target shuffling to assess the quality of the classification model becau
 <img src="Images/target_shuffling_accuracy.png" width="400" alt="Histogram of target shuffling accuracy">
 
 ## Web Application
-The web application was built using [Streamlit](https://www.streamlit.io/) and deployed on Heroku.  Click here to view the app.  Test data can be downloaded [here](customer_data.csv).
-
-
-
-
-
-
-
-
+The web application was built using [Streamlit](https://www.streamlit.io/) and deployed on Heroku.  Click here to view the app.  Test data can be downloaded <a href="customer_data.csv" download="sample_data.csv" target="_blank">here</a>.
