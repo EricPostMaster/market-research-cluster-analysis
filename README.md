@@ -3,7 +3,7 @@
 ## Introduction
 Interpreting consumer product market research data can be a daunting task.  Researchers may collect user input on dozens of variables, and then it is up to analysts to interpret and generalize those results into meaningful market segments and actionable insights.  The goal of this project has been to create a repeatable, efficient, and technically sound approach to uncovering latent market segments from market research data and to identify variables that are most influential in defining those market segments so marketing and product development teams can more efficiently reach their target audiences.
 
-The final deliverable of this project is a [web application](http://example.com) (currently deploying) where end-users can upload their datasets for analysis and receive clustered results as well as a ranked list of the most influential variables.  The immediate business impact of the influential variable list is the ability to use relatively few variables to identify clusters and then use the other associated variables to create messaging or other content that will resonate with the target audience.
+The final deliverable of this project is a web application where end-users can upload their datasets for analysis and receive clustered results as well as a ranked list of the most influential variables.  The immediate business impact of the influential variable list is the ability to use relatively few variables to identify clusters and then use the other associated variables to create messaging or other content that will resonate with the target audience.
 
 The latest classification model has achieved a 90.57% accuracy, compared to just 61.94% accuracy through random classification.
 
